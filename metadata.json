@@ -1,0 +1,5 @@
+{
+  "name": "UroScore Manager",
+  "description": "A comprehensive dashboard for managing urology surgery data, tracking doctor performance, and calculating scores.",
+  "requestFramePermissions": []
+}
