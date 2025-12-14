@@ -1,4 +1,3 @@
-
 export interface Surgery {
   id: string;
   patientName: string;
@@ -22,15 +21,6 @@ export interface SurgeryDefinition {
   complexity: string;
   code?: string;
   basePrice?: number; // Preço base para cálculo de Venda de Serviço
-}
-
-export interface DoctorConfig {
-  id: string; // Usually doctorName normalized
-  doctorName: string;
-  fixedValue: number; // Valor Fixo
-  timeValue: number;  // Valor por Tempo
-  roleValue: number;  // Valor por Cargos/Função
-  roleDescription?: string; // Descrição do cargo (ex: Coordenador)
 }
 
 export interface DoctorStats {
@@ -69,4 +59,4 @@ export interface FirebaseConfig {
   appId?: string;
 }
 
-export type ViewMode = 'login' | 'dashboard' | 'list' | 'analytics' | 'upload' | 'add_surgery' | 'admin' | 'doctors' | 'reports' | 'payments';
+export type ViewMode = 'login' | 'dashboard' | 'list' | 'analytics' | 'upload' | 'add_surgery' | 'admin' | 'doctors' | 'reports';

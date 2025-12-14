@@ -1,16 +1,14 @@
-
-import { Surgery, SurgeryDefinition, SupabaseConfig, DoctorConfig } from '../types';
+import { Surgery, SurgeryDefinition, SupabaseConfig } from '../types';
 
 const KEYS = {
   SURGERIES: 'uroscore_db_surgeries',
   DEFINITIONS: 'uroscore_db_definitions',
-  DOCTOR_CONFIGS: 'uroscore_db_doctor_configs',
   BUDGET: 'uroscore_db_budget',
   SUPABASE_CONFIG: 'uroscore_db_supabase_config',
 };
 
 export const StorageService = {
-  // Surgeries (Logs)
+  // Surgeries (Logs) - Still kept for local cache/offline capability if needed
   saveSurgeries: (data: Surgery[]) => {
     try {
       localStorage.setItem(KEYS.SURGERIES, JSON.stringify(data));
@@ -44,25 +42,6 @@ export const StorageService = {
       return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error('Erro ao carregar definições:', error);
-      return [];
-    }
-  },
-
-  // Doctor Configs (Payments)
-  saveDoctorConfigs: (data: DoctorConfig[]) => {
-    try {
-      localStorage.setItem(KEYS.DOCTOR_CONFIGS, JSON.stringify(data));
-    } catch (error) {
-      console.error('Erro ao salvar configs médicos:', error);
-    }
-  },
-
-  loadDoctorConfigs: (): DoctorConfig[] => {
-    try {
-      const data = localStorage.getItem(KEYS.DOCTOR_CONFIGS);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Erro ao carregar configs médicos:', error);
       return [];
     }
   },
@@ -105,11 +84,10 @@ export const StorageService = {
     }
   },
 
-  // Clear Database
+  // Clear Database (Optional utility)
   clearDatabase: () => {
     localStorage.removeItem(KEYS.SURGERIES);
     localStorage.removeItem(KEYS.DEFINITIONS);
     localStorage.removeItem(KEYS.BUDGET);
-    localStorage.removeItem(KEYS.DOCTOR_CONFIGS);
   }
 };

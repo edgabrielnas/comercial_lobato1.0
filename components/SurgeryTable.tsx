@@ -105,7 +105,7 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] print-container">
+    <div className="flex flex-col h-full lg:h-[calc(100vh-8rem)] print-container">
       
       {/* Report Header (Visible only on Print) */}
       <div className="report-header hidden print:block text-center mb-6">
@@ -121,8 +121,8 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
 
       {/* Filters Toolbar (Hidden on Print) */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col gap-4 no-print">
-        <div className="flex flex-wrap items-end gap-4">
-            <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            <div className="flex-1 min-w-full lg:min-w-[200px]">
                 <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1">Busca Textual</label>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -136,7 +136,7 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
                 </div>
             </div>
 
-            <div className="min-w-[200px]">
+            <div className="min-w-full lg:min-w-[200px]">
                 <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1">Filtrar por Médico</label>
                 <div className="flex items-center gap-2">
                     <Filter size={18} className="text-slate-400 absolute ml-3 pointer-events-none" />
@@ -151,21 +151,21 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
                 </div>
             </div>
 
-            <div className="flex gap-2">
-                <div>
+            <div className="flex gap-2 w-full lg:w-auto">
+                <div className="flex-1 lg:flex-none">
                     <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1">Data Inicial</label>
                     <input 
                         type="date"
-                        className="py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                     />
                 </div>
-                <div>
+                <div className="flex-1 lg:flex-none">
                     <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1">Data Final</label>
                     <input 
                         type="date"
-                        className="py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full py-2 px-3 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                     />
@@ -173,8 +173,8 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
             </div>
         </div>
 
-        <div className="flex justify-between items-center border-t border-slate-100 pt-4">
-            <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-t border-slate-100 pt-4 gap-4">
+            <div className="flex flex-wrap gap-4 lg:gap-6">
                 <div>
                     <span className="text-xs text-slate-500 uppercase font-bold">Total Cirurgias</span>
                     <p className="text-xl font-bold text-slate-800">{filteredSurgeries.length}</p>
@@ -189,20 +189,22 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
                 </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full lg:w-auto">
                 <button 
                     onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors border border-emerald-200"
+                    className="flex-1 lg:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors border border-emerald-200"
                 >
                     <FileSpreadsheet size={18} />
-                    Exportar Planilha (CSV)
+                    <span className="hidden sm:inline">Exportar Planilha (CSV)</span>
+                    <span className="sm:hidden">CSV</span>
                 </button>
                 <button 
                     onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                    className="flex-1 lg:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     <Printer size={18} />
-                    Gerar PDF / Imprimir
+                    <span className="hidden sm:inline">Gerar PDF / Imprimir</span>
+                    <span className="sm:hidden">PDF</span>
                 </button>
             </div>
         </div>
@@ -210,8 +212,8 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col print:shadow-none print:border-none">
-        <div className="overflow-auto flex-1 custom-scrollbar print:overflow-visible">
-          <table className="w-full text-sm text-left">
+        <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar print:overflow-visible relative">
+          <table className="w-full text-sm text-left min-w-[800px] lg:min-w-full">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm print:bg-white print:border-b-2 print:border-black">
               <tr>
                 <th className="px-6 py-3 font-semibold print:px-2">Data</th>
@@ -250,14 +252,14 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete
                                 title="Editar"
                                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-xs font-bold border border-blue-100"
                             >
-                                <Pencil size={14} /> Editar
+                                <Pencil size={14} /> <span className="hidden xl:inline">Editar</span>
                             </button>
                             <button 
                                 onClick={() => handleDeleteClick(s.id, s.patientName)}
                                 title="Excluir"
                                 className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-xs font-bold border border-red-100"
                             >
-                                <Trash2 size={14} /> Excluir
+                                <Trash2 size={14} /> <span className="hidden xl:inline">Excluir</span>
                             </button>
                         </div>
                     </td>

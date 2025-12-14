@@ -1,17 +1,34 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Surgery, SurgeryDefinition, SupabaseConfig, DoctorConfig } from '../types';
+import { Surgery, SurgeryDefinition, SupabaseConfig } from '../types';
 
 let supabase: SupabaseClient | null = null;
 
-const DEFAULT_URL = "https://mrpfcikhpsvnjzixgrqo.supabase.co";
-const DEFAULT_KEY = "sb_publishable_qsu-RwskulBm8fMDT-m-1Q_bJOI7gfs";
+// Fallback credentials (Development/Demo)
+const FALLBACK_URL = "https://mrpfcikhpsvnjzixgrqo.supabase.co";
+const FALLBACK_KEY = "sb_publishable_qsu-RwskulBm8fMDT-m-1Q_bJOI7gfs";
 
 export const SupabaseService = {
   initialize: (config?: SupabaseConfig) => {
-    // Prioritize passed config, then defaults
-    const url = config?.url || DEFAULT_URL;
-    const key = config?.anonKey || DEFAULT_KEY;
+    // 1. Try Config passed via argument (Local Storage)
+    let url = config?.url;
+    let key = config?.anonKey;
+
+    // 2. Try Environment Variables (Defensive check)
+    // We access import.meta.env safely to prevent runtime crashes if it's undefined
+    if (!url || !key) {
+        try {
+            // @ts-ignore - Handle cases where types might misalign during strict builds
+            const env: any = import.meta.env || {}; 
+            url = env.VITE_SUPABASE_URL;
+            key = env.VITE_SUPABASE_ANON_KEY;
+        } catch (e) {
+            console.warn("Could not access import.meta.env");
+        }
+    }
+
+    // 3. Fallback to hardcoded constants
+    if (!url) url = FALLBACK_URL;
+    if (!key) key = FALLBACK_KEY;
 
     if (url && key) {
         try {
@@ -141,52 +158,6 @@ export const SupabaseService = {
   deleteDefinition: async (id: string): Promise<void> => {
     if (!supabase) throw new Error("Supabase not initialized");
     const { error } = await supabase.from('definitions').delete().eq('id', id);
-    if (error) throw error;
-  },
-
-  // --- Doctor Configs ---
-
-  fetchDoctorConfigs: async (): Promise<DoctorConfig[]> => {
-    if (!supabase) throw new Error("Supabase not initialized");
-
-    try {
-        const { data, error } = await supabase.from('doctor_configs').select('*');
-        if (error) {
-             // If table doesn't exist yet, return empty to not break app
-             if (error.code === '42P01') return [];
-             throw error;
-        }
-
-        return (data || []).map((row: any) => ({
-            id: row.id,
-            doctorName: row.doctor_name,
-            fixedValue: Number(row.fixed_value),
-            timeValue: Number(row.time_value),
-            roleValue: Number(row.role_value),
-            roleDescription: row.role_description
-        }));
-    } catch (e) {
-        console.warn("Error fetching doctor configs", e);
-        return [];
-    }
-  },
-
-  saveDoctorConfigs: async (configs: DoctorConfig[]): Promise<void> => {
-    if (!supabase) throw new Error("Supabase not initialized");
-
-    const rows = configs.map(c => ({
-        id: c.id,
-        doctor_name: c.doctorName,
-        fixed_value: c.fixedValue,
-        time_value: c.timeValue,
-        role_value: c.roleValue,
-        role_description: c.roleDescription
-    }));
-
-    const { error } = await supabase
-        .from('doctor_configs')
-        .upsert(rows, { onConflict: 'id' });
-
     if (error) throw error;
   }
 };

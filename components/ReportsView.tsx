@@ -142,16 +142,16 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
         </div>
         
         {/* Export Dropdown */}
-        <div className="relative">
+        <div className="relative w-full md:w-auto">
             <button 
                 onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors shadow-sm"
+                className="w-full md:w-auto flex items-center justify-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 transition-colors shadow-sm"
             >
                 <Download size={18} /> Exportar
                 <ChevronDown size={16} />
             </button>
             {exportMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 z-50 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-full md:w-48 bg-white rounded-lg shadow-xl border border-slate-100 z-50 overflow-hidden">
                     <button onClick={() => handleExport('xls')} className="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700">
                         <FileSpreadsheet size={16} className="text-green-600" /> Excel (.xls)
                     </button>
@@ -166,10 +166,10 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
         </div>
       </div>
 
-      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm inline-flex gap-2 no-print">
-        <button onClick={() => setActiveTab('hapvida')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'hapvida' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Hapvida</button>
-        <button onClick={() => setActiveTab('venda')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'venda' ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Venda de Serviço</button>
-        <button onClick={() => setActiveTab('carta')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'carta' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Carta de Rede</button>
+      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-2 no-print overflow-x-auto">
+        <button onClick={() => setActiveTab('hapvida')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'hapvida' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Hapvida</button>
+        <button onClick={() => setActiveTab('venda')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'venda' ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Venda de Serviço</button>
+        <button onClick={() => setActiveTab('carta')} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'carta' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}>Carta de Rede</button>
       </div>
 
       {/* Report Header for Print */}
@@ -179,20 +179,20 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
       </div>
 
       {/* Filters Area */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-end no-print">
-         <div>
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 items-end no-print">
+         <div className="w-full sm:w-auto">
             <label className="block text-xs font-semibold text-slate-500 mb-1">Data Inicial</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
          </div>
-         <div>
+         <div className="w-full sm:w-auto">
             <label className="block text-xs font-semibold text-slate-500 mb-1">Data Final</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
          </div>
          {activeTab !== 'hapvida' && (
-             <div className="flex bg-slate-100 p-1 rounded-lg">
-                 <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded text-xs font-bold ${statusFilter === 'all' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}>Todos</button>
-                 <button onClick={() => setStatusFilter('pending')} className={`px-3 py-1.5 rounded text-xs font-bold ${statusFilter === 'pending' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}>Pendentes</button>
-                 <button onClick={() => setStatusFilter('paid')} className={`px-3 py-1.5 rounded text-xs font-bold ${statusFilter === 'paid' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>Recebidos</button>
+             <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
+                 <button onClick={() => setStatusFilter('all')} className={`flex-1 sm:flex-none px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap ${statusFilter === 'all' ? 'bg-white shadow text-slate-800' : 'text-slate-500'}`}>Todos</button>
+                 <button onClick={() => setStatusFilter('pending')} className={`flex-1 sm:flex-none px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap ${statusFilter === 'pending' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}>Pendentes</button>
+                 <button onClick={() => setStatusFilter('paid')} className={`flex-1 sm:flex-none px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap ${statusFilter === 'paid' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}>Recebidos</button>
              </div>
          )}
       </div>
@@ -264,8 +264,9 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
       )}
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:border-black print:shadow-none">
-          <table className="w-full text-sm text-left">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:border-black print:shadow-none flex flex-col">
+          <div className="overflow-x-auto flex-1 custom-scrollbar">
+            <table className="w-full text-sm text-left min-w-[800px] lg:min-w-full">
               <thead className="bg-slate-50 text-slate-500 uppercase text-xs print:bg-slate-100 print:text-black">
                   <tr>
                       <th className="px-6 py-3 font-semibold">Data</th>
@@ -274,8 +275,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                       <th className="px-6 py-3 font-semibold">Procedimento</th>
                       {activeTab !== 'hapvida' && <th className="px-6 py-3 font-semibold">Convênio</th>}
                       <th className="px-6 py-3 text-right font-semibold">{activeTab === 'hapvida' ? 'Pontos' : 'Valor (R$)'}</th>
-                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold">Status</th>}
-                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold no-print">Ação</th>}
+                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold no-print">Recebido?</th>}
                   </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -292,20 +292,8 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                           </td>
 
                           {activeTab !== 'hapvida' && (
-                              <td className="px-6 py-3 text-center">
-                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                      s.isPaid 
-                                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
-                                      : 'bg-amber-50 text-amber-700 border-amber-200'
-                                  }`}>
-                                      {s.isPaid ? <><CheckCircle size={12} /> Recebido</> : <><Clock size={12} /> Pendente</>}
-                                  </span>
-                              </td>
-                          )}
-
-                          {activeTab !== 'hapvida' && (
                               <td className="px-6 py-3 text-center no-print">
-                                  <label className="inline-flex items-center cursor-pointer" title="Alternar pagamento">
+                                  <label className="inline-flex items-center cursor-pointer">
                                       <input 
                                         type="checkbox" 
                                         checked={!!s.isPaid} 
@@ -313,6 +301,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                                         className="sr-only peer"
                                       />
                                       <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 relative flex items-center">
+                                          {/* Simple Toggle UI */}
                                       </div>
                                   </label>
                               </td>
@@ -321,7 +310,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                   ))}
                   {filteredData.length === 0 && (
                       <tr>
-                          <td colSpan={activeTab === 'hapvida' ? 5 : 8} className="text-center p-8 text-slate-400">
+                          <td colSpan={activeTab === 'hapvida' ? 6 : 7} className="text-center p-8 text-slate-400">
                               Nenhum registro encontrado para os filtros selecionados.
                           </td>
                       </tr>
@@ -338,10 +327,11 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                               : '-'
                           }
                       </td>
-                      {activeTab !== 'hapvida' && <td colSpan={2} className="no-print"></td>}
+                      {activeTab !== 'hapvida' && <td className="no-print"></td>}
                   </tr>
               </tfoot>
-          </table>
+            </table>
+          </div>
       </div>
     </div>
   );

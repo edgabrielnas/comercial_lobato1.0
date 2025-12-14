@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { LayoutDashboard, List, Upload, PlusCircle, Activity, PieChart, Shield, LogOut, Stethoscope, FileText, RefreshCw, DollarSign } from 'lucide-react';
+import { LayoutDashboard, List, Upload, PlusCircle, Activity, PieChart, Shield, LogOut, Stethoscope, FileText, RefreshCw, X } from 'lucide-react';
 import { ViewMode, User } from '../types';
 
 interface SidebarProps {
@@ -10,9 +9,11 @@ interface SidebarProps {
   onLogout: () => void;
   onSync?: () => void;
   isSyncing?: boolean;
+  isOpen?: boolean; // New prop for mobile state
+  onClose?: () => void; // New prop for closing mobile menu
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, onLogout, onSync, isSyncing }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, onLogout, onSync, isSyncing, isOpen, onClose }) => {
   const navClass = (view: ViewMode) =>
     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
       currentView === view
@@ -23,119 +24,132 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, on
   if (!user) return null;
 
   return (
-    <div className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 flex flex-col z-10 shadow-sm no-print">
-      <div className="p-6 border-b border-slate-100">
-        <div className="flex items-center gap-2 text-blue-700 mb-1">
-          <Activity size={28} />
-          <h1 className="text-xl font-bold tracking-tight">UroScore</h1>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`
+        fixed lg:static top-0 left-0 h-full w-64 bg-white border-r border-slate-200 
+        flex flex-col z-40 shadow-xl lg:shadow-none transition-transform duration-300 ease-in-out no-print
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-2 text-blue-700 mb-1">
+              <Activity size={28} />
+              <h1 className="text-xl font-bold tracking-tight">UroScore</h1>
+            </div>
+            <p className="text-xs text-slate-400 pl-9">Olá, {user.name.split(' ')[0]}</p>
+          </div>
+          {/* Close button for mobile */}
+          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-600">
+            <X size={24} />
+          </button>
         </div>
-        <p className="text-xs text-slate-400 pl-9">Olá, {user.name.split(' ')[0]}</p>
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+          <div className="mb-4">
+              <button
+              onClick={() => setCurrentView('add_surgery')}
+              className={`flex items-center justify-center gap-2 w-full py-3 rounded-lg font-semibold shadow-sm transition-all active:scale-95 ${currentView === 'add_surgery' ? 'bg-blue-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
+              >
+              <PlusCircle size={20} />
+              Novo Cadastro
+              </button>
+          </div>
+
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6 px-2">Menu Principal</div>
+          
+          <div
+            className={navClass('dashboard')}
+            onClick={() => setCurrentView('dashboard')}
+          >
+            <LayoutDashboard size={20} />
+            <span className="font-medium">Painel Financeiro</span>
+          </div>
+          
+          <div
+            className={navClass('doctors')}
+            onClick={() => setCurrentView('doctors')}
+          >
+            <Stethoscope size={20} />
+            <span className="font-medium">Médicos</span>
+          </div>
+
+          <div
+            className={navClass('reports')}
+            onClick={() => setCurrentView('reports')}
+          >
+            <FileText size={20} />
+            <span className="font-medium">Relatórios & Recebimentos</span>
+          </div>
+
+          <div
+            className={navClass('list')}
+            onClick={() => setCurrentView('list')}
+          >
+            <List size={20} />
+            <span className="font-medium">Lista de Cirurgias</span>
+          </div>
+          <div
+            className={navClass('analytics')}
+            onClick={() => setCurrentView('analytics')}
+          >
+            <PieChart size={20} />
+            <span className="font-medium">Análises</span>
+          </div>
+
+          {user.isAdmin && (
+            <>
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6 px-2">Administração</div>
+              <div
+                className={navClass('admin')}
+                onClick={() => setCurrentView('admin')}
+              >
+                <Shield size={20} />
+                <span className="font-medium">Configurações</span>
+              </div>
+
+              <div
+                className={navClass('upload')}
+                onClick={() => setCurrentView('upload')}
+              >
+                <Upload size={20} />
+                <span className="font-medium">Importar CSV</span>
+              </div>
+              
+              {/* Sync Actions */}
+              <div className="mt-4 px-2 space-y-2">
+                  <button
+                      onClick={onSync}
+                      disabled={isSyncing}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+                  >
+                      <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                      {isSyncing ? 'Atualizando...' : 'Atualizar Dados'}
+                  </button>
+              </div>
+            </>
+          )}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100">
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer text-slate-500 hover:bg-red-50 hover:text-red-600 w-full"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Sair</span>
+          </button>
+        </div>
       </div>
-
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        <div className="mb-4">
-            <button
-            onClick={() => setCurrentView('add_surgery')}
-            className={`flex items-center justify-center gap-2 w-full py-3 rounded-lg font-semibold shadow-sm transition-all active:scale-95 ${currentView === 'add_surgery' ? 'bg-blue-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
-            >
-            <PlusCircle size={20} />
-            Novo Cadastro
-            </button>
-        </div>
-
-        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6 px-2">Menu Principal</div>
-        
-        <div
-          className={navClass('dashboard')}
-          onClick={() => setCurrentView('dashboard')}
-        >
-          <LayoutDashboard size={20} />
-          <span className="font-medium">Painel Financeiro</span>
-        </div>
-
-        <div
-          className={navClass('payments')}
-          onClick={() => setCurrentView('payments')}
-        >
-          <DollarSign size={20} />
-          <span className="font-medium">Pagamentos</span>
-        </div>
-        
-        <div
-          className={navClass('doctors')}
-          onClick={() => setCurrentView('doctors')}
-        >
-          <Stethoscope size={20} />
-          <span className="font-medium">Médicos</span>
-        </div>
-
-        <div
-          className={navClass('reports')}
-          onClick={() => setCurrentView('reports')}
-        >
-          <FileText size={20} />
-          <span className="font-medium">Relatórios & Recebimentos</span>
-        </div>
-
-        <div
-          className={navClass('list')}
-          onClick={() => setCurrentView('list')}
-        >
-          <List size={20} />
-          <span className="font-medium">Lista de Cirurgias</span>
-        </div>
-        <div
-          className={navClass('analytics')}
-          onClick={() => setCurrentView('analytics')}
-        >
-          <PieChart size={20} />
-          <span className="font-medium">Análises</span>
-        </div>
-
-        {user.isAdmin && (
-          <>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6 px-2">Administração</div>
-            <div
-              className={navClass('admin')}
-              onClick={() => setCurrentView('admin')}
-            >
-              <Shield size={20} />
-              <span className="font-medium">Configurações</span>
-            </div>
-
-            <div
-              className={navClass('upload')}
-              onClick={() => setCurrentView('upload')}
-            >
-              <Upload size={20} />
-              <span className="font-medium">Importar CSV</span>
-            </div>
-            
-            {/* Sync Actions */}
-            <div className="mt-4 px-2 space-y-2">
-                <button
-                    onClick={onSync}
-                    disabled={isSyncing}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
-                >
-                    <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                    {isSyncing ? 'Atualizando...' : 'Atualizar Dados'}
-                </button>
-            </div>
-          </>
-        )}
-      </nav>
-
-      <div className="p-4 border-t border-slate-100">
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer text-slate-500 hover:bg-red-50 hover:text-red-600 w-full"
-        >
-          <LogOut size={20} />
-          <span className="font-medium">Sair</span>
-        </button>
-      </div>
-    </div>
+    </>
   );
 };
 
