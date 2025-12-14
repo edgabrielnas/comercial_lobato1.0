@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LayoutDashboard, List, Upload, PlusCircle, Activity, PieChart, Shield, LogOut, Stethoscope, FileText, RefreshCw, DownloadCloud } from 'lucide-react';
+import { LayoutDashboard, List, Upload, PlusCircle, Activity, PieChart, Shield, LogOut, Stethoscope, FileText, RefreshCw, DollarSign } from 'lucide-react';
 import { ViewMode, User } from '../types';
 
 interface SidebarProps {
@@ -8,12 +9,10 @@ interface SidebarProps {
   user: User | null;
   onLogout: () => void;
   onSync?: () => void;
-  onPull?: () => void;
   isSyncing?: boolean;
-  hasGoogleConfig?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, onLogout, onSync, onPull, isSyncing, hasGoogleConfig }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, onLogout, onSync, isSyncing }) => {
   const navClass = (view: ViewMode) =>
     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
       currentView === view
@@ -52,6 +51,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, on
         >
           <LayoutDashboard size={20} />
           <span className="font-medium">Painel Financeiro</span>
+        </div>
+
+        <div
+          className={navClass('payments')}
+          onClick={() => setCurrentView('payments')}
+        >
+          <DollarSign size={20} />
+          <span className="font-medium">Pagamentos</span>
         </div>
         
         <div
@@ -105,26 +112,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, user, on
             </div>
             
             {/* Sync Actions */}
-            {hasGoogleConfig && (
-                <div className="mt-4 px-2 space-y-2">
-                    <button
-                        onClick={onSync}
-                        disabled={isSyncing}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
-                    >
-                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                        {isSyncing ? 'Sincronizando...' : 'Salvar no Google Sheets'}
-                    </button>
-                    <button
-                        onClick={onPull}
-                        disabled={isSyncing}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                        <DownloadCloud size={14} />
-                        Baixar da Planilha
-                    </button>
-                </div>
-            )}
+            <div className="mt-4 px-2 space-y-2">
+                <button
+                    onClick={onSync}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+                >
+                    <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                    {isSyncing ? 'Atualizando...' : 'Atualizar Dados'}
+                </button>
+            </div>
           </>
         )}
       </nav>

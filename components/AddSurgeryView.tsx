@@ -1,29 +1,57 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Surgery, SurgeryDefinition } from '../types';
-import { Save, AlertCircle, Check, Briefcase, UserPlus } from 'lucide-react';
+import { Save, AlertCircle, Check, Briefcase, UserPlus, ArrowLeft } from 'lucide-react';
 
 interface AddSurgeryViewProps {
   onAdd: (surgery: Surgery) => void;
   definitions: SurgeryDefinition[];
   onCancel: () => void;
   existingSurgeries?: Surgery[];
+  initialData?: Surgery | null; // New prop for editing
 }
 
-const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onCancel, existingSurgeries = [] }) => {
+const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onCancel, existingSurgeries = [], initialData }) => {
+  
+  // Helper to get local YYYY-MM-DD
+  const getLocalDate = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState({
     patientName: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDate(),
     doctorName: '',
-    surgeryType: '', // This matches definitions.name
+    surgeryType: '', 
     notes: '',
-    source: 'Hapvida', // Default
+    source: 'Hapvida',
     healthInsurance: '',
-    cost: 0
+    cost: 0,
+    receivedValue: 0
   });
 
   const [points, setPoints] = useState(0);
   const [success, setSuccess] = useState(false);
   const [isNewDoctor, setIsNewDoctor] = useState(false);
+
+  // Initialize form if editing
+  useEffect(() => {
+    if (initialData) {
+        setFormData({
+            patientName: initialData.patientName,
+            date: initialData.date,
+            doctorName: initialData.doctorName,
+            surgeryType: initialData.surgeryType,
+            notes: initialData.notes || '',
+            source: initialData.source || 'Hapvida',
+            healthInsurance: initialData.healthInsurance || '',
+            cost: initialData.cost || 0,
+            receivedValue: initialData.receivedValue || 0
+        });
+        setPoints(initialData.points);
+    }
+  }, [initialData]);
 
   // Extract unique doctors
   const existingDoctors = useMemo(() => {
@@ -32,45 +60,75 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
 
   // If no doctors exist, default to new doctor input
   useEffect(() => {
-      if (existingDoctors.length === 0) {
+      if (existingDoctors.length === 0 && !initialData) {
           setIsNewDoctor(true);
       }
-  }, [existingDoctors]);
+  }, [existingDoctors, initialData]);
 
   // Auto-calculate points and default cost when surgery type changes
-  useEffect(() => {
-    const def = definitions.find(d => d.name === formData.surgeryType);
-    setPoints(def ? def.points : 0);
+  // Only run this logic if the user changes the type manually, 
+  // or if we are NOT in edit mode (to prevent overwriting existing custom values on load)
+  const handleSurgeryTypeChange = (newType: string) => {
+    const def = definitions.find(d => d.name === newType);
+    setFormData(prev => ({ ...prev, surgeryType: newType }));
     
-    // Only auto-set cost if the user hasn't typed a custom one yet (or if switching types resets it)
-    // Here we reset cost based on definition if source is Venda de Serviço
-    if (formData.source === 'Venda de Serviço' && def) {
-        setFormData(prev => ({ ...prev, cost: def.basePrice || 0 }));
+    if (def) {
+        setPoints(def.points);
+        // Only auto-set cost if source is Venda de Serviço
+        if (formData.source === 'Venda de Serviço') {
+             setFormData(prev => ({ ...prev, surgeryType: newType, cost: def.basePrice || 0 }));
+        }
+    } else {
+        setPoints(0);
     }
-  }, [formData.surgeryType, definitions, formData.source]);
+  };
+
+  const handleSourceChange = (newSource: string) => {
+    setFormData(prev => ({ ...prev, source: newSource }));
+    // Reset cost if switching away from service sales
+    if (newSource !== 'Venda de Serviço') {
+            setFormData(prev => ({ ...prev, cost: 0, healthInsurance: '', receivedValue: 0 }));
+    } else {
+        // Try to pre-fill cost based on definition
+        const def = definitions.find(d => d.name === formData.surgeryType);
+        if (def) setFormData(prev => ({ ...prev, cost: def.basePrice || 0 }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newSurgery: Surgery = {
-      id: `manual-${Date.now()}`,
+      // If editing, keep original ID, else generate new
+      id: initialData ? initialData.id : `manual-${Date.now()}`,
       ...formData,
       points: points, 
-      doctorName: formData.doctorName.toUpperCase()
+      doctorName: formData.doctorName.toUpperCase(),
+      // Preserve payment status if editing, else default false
+      isPaid: initialData ? initialData.isPaid : false
     };
     onAdd(newSurgery);
     setSuccess(true);
     
-    setTimeout(() => {
-        setSuccess(false);
-        setFormData(prev => ({ 
-            ...prev, 
-            patientName: '', 
-            notes: '',
-            healthInsurance: '',
-            cost: 0
-            // Keep doctor, date and source
-        })); 
-    }, 2000);
+    // If editing, we typically go back immediately or show success then back
+    if (initialData) {
+        setTimeout(() => {
+            onCancel(); // Go back to dashboard/list
+        }, 1000);
+    } else {
+        // If adding new, reset form for next entry
+        setTimeout(() => {
+            setSuccess(false);
+            setFormData(prev => ({ 
+                ...prev, 
+                patientName: '', 
+                notes: '',
+                healthInsurance: '',
+                cost: 0,
+                receivedValue: 0
+                // Keep doctor, date and source for convenience
+            })); 
+        }, 1500);
+    }
   };
 
   return (
@@ -78,9 +136,16 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">Registrar Cirurgia</h2>
-            <p className="text-slate-500 text-sm mt-1">Preencha os dados abaixo para adicionar um novo registro.</p>
+            <h2 className="text-2xl font-bold text-slate-800">
+                {initialData ? 'Editar Cirurgia' : 'Registrar Cirurgia'}
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+                {initialData ? 'Altere os dados abaixo e salve.' : 'Preencha os dados abaixo para adicionar um novo registro.'}
+            </p>
           </div>
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+              <ArrowLeft size={24} />
+          </button>
         </div>
         
         {definitions.length === 0 ? (
@@ -177,18 +242,7 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
                     required
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none cursor-pointer"
                     value={formData.source}
-                    onChange={e => {
-                        const newSource = e.target.value;
-                        setFormData(prev => ({ ...prev, source: newSource }));
-                        // Reset cost if switching away from service sales
-                        if (newSource !== 'Venda de Serviço') {
-                             setFormData(prev => ({ ...prev, cost: 0, healthInsurance: '' }));
-                        } else {
-                            // Try to pre-fill cost
-                            const def = definitions.find(d => d.name === formData.surgeryType);
-                            if (def) setFormData(prev => ({ ...prev, cost: def.basePrice || 0 }));
-                        }
-                    }}
+                    onChange={e => handleSourceChange(e.target.value)}
                     >
                         <option value="Hapvida">Hapvida</option>
                         <option value="Carta de Rede">Carta de Rede</option>
@@ -201,7 +255,7 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
 
             {/* Venda de Serviço Specific Fields */}
             {formData.source === 'Venda de Serviço' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                     <div>
                         <label className="block text-sm font-semibold text-emerald-800 mb-2">Convênio de Saúde</label>
                         <input
@@ -214,7 +268,7 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
                         />
                     </div>
                      <div>
-                        <label className="block text-sm font-semibold text-emerald-800 mb-2">Valor do Procedimento (R$)</label>
+                        <label className="block text-sm font-semibold text-emerald-800 mb-2">Valor Cobrado (R$)</label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 font-bold">R$</span>
                             <input
@@ -226,7 +280,21 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
                                 onChange={e => setFormData({...formData, cost: parseFloat(e.target.value)})}
                             />
                         </div>
-                        <p className="text-xs text-emerald-600 mt-1">Carregado automaticamente da tabela de valores (se disponível).</p>
+                        <p className="text-xs text-emerald-600 mt-1">Valor de Tabela</p>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-semibold text-emerald-800 mb-2">Valor Recebido (R$)</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 font-bold">R$</span>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full pl-9 pr-4 py-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-700"
+                                value={formData.receivedValue}
+                                onChange={e => setFormData({...formData, receivedValue: parseFloat(e.target.value)})}
+                            />
+                        </div>
+                        <p className="text-xs text-emerald-600 mt-1">Valor efetivo</p>
                     </div>
                 </div>
             )}
@@ -238,7 +306,7 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
                     required
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none cursor-pointer"
                     value={formData.surgeryType}
-                    onChange={e => setFormData({...formData, surgeryType: e.target.value})}
+                    onChange={e => handleSurgeryTypeChange(e.target.value)}
                     >
                     <option value="" disabled>Selecione o procedimento...</option>
                     {definitions.map(def => (
@@ -292,12 +360,12 @@ const AddSurgeryView: React.FC<AddSurgeryViewProps> = ({ onAdd, definitions, onC
                 {success ? (
                     <>
                     <Check size={20} />
-                    Salvo com Sucesso!
+                    {initialData ? 'Atualizado!' : 'Salvo com Sucesso!'}
                     </>
                 ) : (
                     <>
                     <Save size={20} />
-                    Salvar Registro
+                    {initialData ? 'Atualizar Cirurgia' : 'Salvar Registro'}
                     </>
                 )}
                 </button>

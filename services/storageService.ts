@@ -1,10 +1,12 @@
-import { Surgery, SurgeryDefinition, GoogleConfig } from '../types';
+
+import { Surgery, SurgeryDefinition, SupabaseConfig, DoctorConfig } from '../types';
 
 const KEYS = {
   SURGERIES: 'uroscore_db_surgeries',
   DEFINITIONS: 'uroscore_db_definitions',
+  DOCTOR_CONFIGS: 'uroscore_db_doctor_configs',
   BUDGET: 'uroscore_db_budget',
-  GOOGLE_CONFIG: 'uroscore_db_google_config'
+  SUPABASE_CONFIG: 'uroscore_db_supabase_config',
 };
 
 export const StorageService = {
@@ -46,6 +48,25 @@ export const StorageService = {
     }
   },
 
+  // Doctor Configs (Payments)
+  saveDoctorConfigs: (data: DoctorConfig[]) => {
+    try {
+      localStorage.setItem(KEYS.DOCTOR_CONFIGS, JSON.stringify(data));
+    } catch (error) {
+      console.error('Erro ao salvar configs médicos:', error);
+    }
+  },
+
+  loadDoctorConfigs: (): DoctorConfig[] => {
+    try {
+      const data = localStorage.getItem(KEYS.DOCTOR_CONFIGS);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Erro ao carregar configs médicos:', error);
+      return [];
+    }
+  },
+
   // Financial Settings
   saveBudget: (amount: number) => {
     try {
@@ -65,30 +86,30 @@ export const StorageService = {
     }
   },
 
-  // Google Config
-  saveGoogleConfig: (config: GoogleConfig) => {
+  // Supabase Config
+  saveSupabaseConfig: (config: SupabaseConfig) => {
     try {
-      localStorage.setItem(KEYS.GOOGLE_CONFIG, JSON.stringify(config));
+      localStorage.setItem(KEYS.SUPABASE_CONFIG, JSON.stringify(config));
     } catch (error) {
-      console.error('Erro ao salvar config Google:', error);
+      console.error('Erro ao salvar config Supabase:', error);
     }
   },
 
-  loadGoogleConfig: (): GoogleConfig | null => {
+  loadSupabaseConfig: (): SupabaseConfig | null => {
     try {
-      const data = localStorage.getItem(KEYS.GOOGLE_CONFIG);
+      const data = localStorage.getItem(KEYS.SUPABASE_CONFIG);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Erro ao carregar config Google:', error);
+      console.error('Erro ao carregar config Supabase:', error);
       return null;
     }
   },
 
-  // Clear Database (Optional utility)
+  // Clear Database
   clearDatabase: () => {
     localStorage.removeItem(KEYS.SURGERIES);
     localStorage.removeItem(KEYS.DEFINITIONS);
     localStorage.removeItem(KEYS.BUDGET);
-    // Keep google config optionally
+    localStorage.removeItem(KEYS.DOCTOR_CONFIGS);
   }
 };

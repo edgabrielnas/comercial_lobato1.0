@@ -19,8 +19,14 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ surgeries, monthlyBudget }) => {
-  // Get current date parts for defaults
-  const today = new Date();
+  // Get current date parts for defaults (Timezone Aware)
+  const getLocalDate = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d;
+  };
+
+  const today = getLocalDate();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
   const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
 

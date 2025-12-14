@@ -55,25 +55,32 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
     if (activeTab === 'hapvida') {
         const totalPoints = filteredData.reduce((acc, s) => acc + s.points, 0);
         // Calculate estimated value based on global monthly budget vs total points in period (Simplification)
-        // Ideally budget is per month, but here we assume the budget provided is for the filtered period
         const estimatedValue = totalPoints > 0 ? monthlyBudget : 0; 
         
-        return { totalPoints, estimatedValue };
+        return { 
+            type: 'hapvida',
+            totalPoints, 
+            estimatedValue 
+        };
     } else {
         const totalValue = filteredData.reduce((acc, s) => acc + (s.cost || 0), 0);
         const receivedValue = filteredData.filter(s => s.isPaid).reduce((acc, s) => acc + (s.cost || 0), 0);
         const pendingValue = totalValue - receivedValue;
         
-        return { totalValue, receivedValue, pendingValue };
+        return { 
+            type: 'financial',
+            totalValue, 
+            receivedValue, 
+            pendingValue 
+        };
     }
   }, [filteredData, activeTab, monthlyBudget]);
 
   // Chart Data
   const chartData = useMemo(() => {
-      if (activeTab === 'hapvida') return [];
-      // @ts-ignore
+      if (activeTab === 'hapvida' || metrics.type !== 'financial') return [];
+      
       const received = metrics.receivedValue || 0;
-      // @ts-ignore
       const pending = metrics.pendingValue || 0;
 
       // Handle empty data to avoid chart errors
@@ -191,13 +198,12 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
       </div>
 
       {/* DASHBOARD SECTION (For Venda/Carta) */}
-      {activeTab !== 'hapvida' && (
+      {activeTab !== 'hapvida' && metrics.type === 'financial' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Cards */}
               <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                       <p className="text-slate-500 text-sm font-medium">Valor Total</p>
-                      {/* @ts-ignore */}
                       <h3 className="text-2xl font-bold text-slate-800">{formatCurrency(metrics.totalValue || 0)}</h3>
                   </div>
                   <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
@@ -205,7 +211,6 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                         <CheckCircle size={16} className="text-emerald-600" />
                         <p className="text-emerald-800 text-sm font-bold">Recebido</p>
                       </div>
-                      {/* @ts-ignore */}
                       <h3 className="text-2xl font-bold text-emerald-700">{formatCurrency(metrics.receivedValue || 0)}</h3>
                   </div>
                   <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
@@ -213,7 +218,6 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                         <Clock size={16} className="text-amber-600" />
                         <p className="text-amber-800 text-sm font-bold">Pendente</p>
                       </div>
-                      {/* @ts-ignore */}
                       <h3 className="text-2xl font-bold text-amber-700">{formatCurrency(metrics.pendingValue || 0)}</h3>
                   </div>
               </div>
@@ -232,7 +236,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                             outerRadius={60} 
                             paddingAngle={5}
                           >
-                              {chartData.map((entry, index) => (
+                              {chartData.map((entry: any, index: number) => (
                                   <Cell key={`cell-${index}`} fill={entry.color || '#ccc'} />
                               ))}
                           </Pie>
@@ -245,11 +249,10 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
       )}
 
       {/* DASHBOARD SECTION (For Hapvida) */}
-      {activeTab === 'hapvida' && (
+      {activeTab === 'hapvida' && metrics.type === 'hapvida' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
                   <p className="text-blue-800 text-sm font-bold mb-1">Total de Pontos (Período)</p>
-                  {/* @ts-ignore */}
                   <h3 className="text-3xl font-bold text-blue-700">{metrics.totalPoints}</h3>
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-200">
@@ -271,7 +274,8 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                       <th className="px-6 py-3 font-semibold">Procedimento</th>
                       {activeTab !== 'hapvida' && <th className="px-6 py-3 font-semibold">Convênio</th>}
                       <th className="px-6 py-3 text-right font-semibold">{activeTab === 'hapvida' ? 'Pontos' : 'Valor (R$)'}</th>
-                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold no-print">Recebido?</th>}
+                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold">Status</th>}
+                      {activeTab !== 'hapvida' && <th className="px-6 py-3 text-center font-semibold no-print">Ação</th>}
                   </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -288,8 +292,20 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                           </td>
 
                           {activeTab !== 'hapvida' && (
+                              <td className="px-6 py-3 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                      s.isPaid 
+                                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+                                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                                  }`}>
+                                      {s.isPaid ? <><CheckCircle size={12} /> Recebido</> : <><Clock size={12} /> Pendente</>}
+                                  </span>
+                              </td>
+                          )}
+
+                          {activeTab !== 'hapvida' && (
                               <td className="px-6 py-3 text-center no-print">
-                                  <label className="inline-flex items-center cursor-pointer">
+                                  <label className="inline-flex items-center cursor-pointer" title="Alternar pagamento">
                                       <input 
                                         type="checkbox" 
                                         checked={!!s.isPaid} 
@@ -297,7 +313,6 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                                         className="sr-only peer"
                                       />
                                       <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 relative flex items-center">
-                                          {/* Simple Toggle UI */}
                                       </div>
                                   </label>
                               </td>
@@ -306,7 +321,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                   ))}
                   {filteredData.length === 0 && (
                       <tr>
-                          <td colSpan={activeTab === 'hapvida' ? 6 : 7} className="text-center p-8 text-slate-400">
+                          <td colSpan={activeTab === 'hapvida' ? 5 : 8} className="text-center p-8 text-slate-400">
                               Nenhum registro encontrado para os filtros selecionados.
                           </td>
                       </tr>
@@ -316,14 +331,14 @@ const ReportsView: React.FC<ReportsViewProps> = ({ surgeries, monthlyBudget, onT
                   <tr>
                       <td colSpan={activeTab === 'hapvida' ? 5 : 5} className="px-6 py-3 text-right uppercase text-xs">Total do Relatório</td>
                       <td className="px-6 py-3 text-right">
-                          {activeTab === 'hapvida' 
-                            // @ts-ignore
+                          {activeTab === 'hapvida' && metrics.type === 'hapvida'
                             ? metrics.totalPoints 
-                            // @ts-ignore
-                            : formatCurrency(metrics.totalValue || 0)
+                            : metrics.type === 'financial' 
+                              ? formatCurrency(metrics.totalValue || 0)
+                              : '-'
                           }
                       </td>
-                      {activeTab !== 'hapvida' && <td className="no-print"></td>}
+                      {activeTab !== 'hapvida' && <td colSpan={2} className="no-print"></td>}
                   </tr>
               </tfoot>
           </table>

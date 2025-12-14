@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Surgery } from '../types';
-import { Search, Filter, Calendar, Download, Printer, FileSpreadsheet } from 'lucide-react';
+import { Search, Filter, Calendar, Download, Printer, FileSpreadsheet, Pencil, Trash2 } from 'lucide-react';
 
 interface SurgeryTableProps {
   surgeries: Surgery[];
+  onEdit?: (surgery: Surgery) => void;
+  onDelete?: (id: string) => void;
+  isAdmin?: boolean;
 }
 
-const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries }) => {
+const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries, onEdit, onDelete, isAdmin }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [doctorFilter, setDoctorFilter] = useState('');
   
@@ -93,6 +96,12 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries }) => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDeleteClick = (id: string, patientName: string) => {
+      if (window.confirm(`Tem certeza que deseja excluir a cirurgia de ${patientName}?`)) {
+          if (onDelete) onDelete(id);
+      }
   };
 
   return (
@@ -212,11 +221,12 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries }) => {
                 <th className="px-6 py-3 font-semibold print:px-2">Cirurgia</th>
                 <th className="px-6 py-3 text-right font-semibold print:px-2">Pontos</th>
                 <th className="px-6 py-3 text-right font-semibold print:px-2">Valor</th>
+                {isAdmin && <th className="px-6 py-3 text-center font-semibold no-print sticky right-0 bg-slate-50 shadow-[-4px_0px_10px_rgba(0,0,0,0.02)]">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredSurgeries.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50 transition-colors print:break-inside-avoid">
+                <tr key={s.id} className="hover:bg-slate-50 transition-colors print:break-inside-avoid group">
                   <td className="px-6 py-3 text-slate-500 whitespace-nowrap print:px-2">{formatDate(s.date)}</td>
                   <td className="px-6 py-3 font-medium text-slate-900 print:px-2">{s.patientName}</td>
                   <td className="px-6 py-3 text-slate-600 print:px-2">
@@ -231,11 +241,32 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries }) => {
                   <td className="px-6 py-3 text-slate-600 max-w-xs truncate print:whitespace-normal print:overflow-visible print:px-2" title={s.surgeryType}>{s.surgeryType}</td>
                   <td className="px-6 py-3 text-right font-bold text-emerald-600 print:px-2">{s.points}</td>
                   <td className="px-6 py-3 text-right text-slate-500 print:px-2">{s.cost ? formatCurrency(s.cost) : '-'}</td>
+                  
+                  {isAdmin && (
+                    <td className="px-6 py-3 text-center no-print sticky right-0 bg-white group-hover:bg-slate-50 shadow-[-4px_0px_10px_rgba(0,0,0,0.02)]">
+                        <div className="flex justify-center gap-2">
+                            <button 
+                                onClick={() => onEdit && onEdit(s)}
+                                title="Editar"
+                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-xs font-bold border border-blue-100"
+                            >
+                                <Pencil size={14} /> Editar
+                            </button>
+                            <button 
+                                onClick={() => handleDeleteClick(s.id, s.patientName)}
+                                title="Excluir"
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-xs font-bold border border-red-100"
+                            >
+                                <Trash2 size={14} /> Excluir
+                            </button>
+                        </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {filteredSurgeries.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={isAdmin ? 8 : 7} className="px-6 py-12 text-center text-slate-400">
                     Nenhuma cirurgia encontrada no período selecionado.
                   </td>
                 </tr>
@@ -247,6 +278,7 @@ const SurgeryTable: React.FC<SurgeryTableProps> = ({ surgeries }) => {
                     <td colSpan={5} className="px-6 py-3 text-right uppercase text-xs">Totais do Período</td>
                     <td className="px-6 py-3 text-right text-black">{totalPoints} pts</td>
                     <td className="px-6 py-3 text-right text-black">{formatCurrency(totalValue)}</td>
+                    {isAdmin && <td className="no-print"></td>}
                 </tr>
             </tfoot>
           </table>

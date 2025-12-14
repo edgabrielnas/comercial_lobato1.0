@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { SurgeryDefinition, GoogleConfig } from '../types';
-import { Edit2, Plus, Trash2, Save, X, DollarSign, Activity, FileText, Briefcase, Database, Link as LinkIcon, AlertCircle } from 'lucide-react';
-import { GoogleSheetsService } from '../services/googleSheetsService';
-import { StorageService } from '../services/storageService';
+import React, { useState } from 'react';
+import { SurgeryDefinition } from '../types';
+import { Edit2, Plus, Trash2, Save, X, DollarSign, Activity, FileText, Briefcase } from 'lucide-react';
 
 interface AdminViewProps {
   definitions: SurgeryDefinition[];
@@ -13,9 +11,9 @@ interface AdminViewProps {
   onUpdateBudget: (value: number) => void;
 }
 
-type TabType = 'hapvida' | 'carta' | 'venda' | 'sync';
+type TabType = 'hapvida' | 'carta' | 'venda';
 
-const AdminView: React.FC<AdminViewProps> = ({ 
+export const AdminView: React.FC<AdminViewProps> = ({ 
   definitions, 
   onUpdateDefinition, 
   onAddDefinition, 
@@ -32,19 +30,6 @@ const AdminView: React.FC<AdminViewProps> = ({
 
   // Local state for budget input
   const [budgetInput, setBudgetInput] = useState(monthlyBudget.toString());
-
-  // Google Sync State
-  const [googleConfig, setGoogleConfig] = useState<GoogleConfig>({
-      spreadsheetUrl: '',
-      spreadsheetId: '',
-      apiKey: '',
-      clientId: ''
-  });
-
-  useEffect(() => {
-      const loaded = StorageService.loadGoogleConfig();
-      if (loaded) setGoogleConfig(loaded);
-  }, []);
 
   const handleBudgetSave = () => {
     const val = parseFloat(budgetInput);
@@ -79,20 +64,11 @@ const AdminView: React.FC<AdminViewProps> = ({
     }
   };
 
-  const handleGoogleSave = () => {
-      const id = GoogleSheetsService.extractIdFromUrl(googleConfig.spreadsheetUrl);
-      const configToSave = { ...googleConfig, spreadsheetId: id || googleConfig.spreadsheetId };
-      setGoogleConfig(configToSave);
-      StorageService.saveGoogleConfig(configToSave);
-      alert('Configuração salva! Use o botão de Sincronizar na barra lateral para conectar.');
-  };
-
   const getTabLabel = (tab: TabType) => {
       switch(tab) {
           case 'hapvida': return 'Hapvida';
           case 'carta': return 'Carta de Rede';
           case 'venda': return 'Venda de Serviço';
-          case 'sync': return 'Sincronização';
       }
   };
 
@@ -101,7 +77,6 @@ const AdminView: React.FC<AdminViewProps> = ({
           case 'hapvida': return 'blue';
           case 'carta': return 'indigo';
           case 'venda': return 'emerald';
-          case 'sync': return 'slate';
       }
   };
 
@@ -127,99 +102,17 @@ const AdminView: React.FC<AdminViewProps> = ({
                 className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'carta' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
             >
                 <FileText size={18} />
-                Carta de Rede
+                Carta
             </button>
             <button
                 onClick={() => setActiveTab('venda')}
                 className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'venda' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
             >
                 <Briefcase size={18} />
-                Venda de Serviço
-            </button>
-            <button
-                onClick={() => setActiveTab('sync')}
-                className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'sync' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:bg-slate-200'}`}
-            >
-                <Database size={18} />
-                Banco de Dados
+                Venda
             </button>
         </div>
       </div>
-
-      {/* Google Sheets Sync Configuration */}
-      {activeTab === 'sync' && (
-           <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-fade-in">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-green-100 p-3 rounded-xl text-green-700">
-                        <Database size={28} />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Conexão Google Sheets</h2>
-                        <p className="text-slate-500">Use uma planilha do Google como banco de dados em tempo real.</p>
-                    </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mb-6 flex gap-3 text-sm text-blue-800">
-                    <AlertCircle size={20} className="shrink-0" />
-                    <p>
-                        Para segurança, esta integração requer credenciais do Google Cloud. 
-                        <strong>A planilha será sobrescrita</strong> a cada salvamento para manter a sincronia.
-                    </p>
-                </div>
-
-                <div className="space-y-4 max-w-3xl">
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Link da Planilha (Google Sheets)</label>
-                        <div className="relative">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input 
-                                type="text"
-                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                                placeholder="https://docs.google.com/spreadsheets/d/..."
-                                value={googleConfig.spreadsheetUrl}
-                                onChange={e => setGoogleConfig({...googleConfig, spreadsheetUrl: e.target.value})}
-                            />
-                        </div>
-                        {googleConfig.spreadsheetUrl && !GoogleSheetsService.extractIdFromUrl(googleConfig.spreadsheetUrl) && (
-                            <p className="text-xs text-red-500 mt-1">Link inválido. Não foi possível identificar o ID.</p>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Google Cloud Client ID</label>
-                            <input 
-                                type="text"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                                placeholder="ex: 123456-abcde.apps.googleusercontent.com"
-                                value={googleConfig.clientId}
-                                onChange={e => setGoogleConfig({...googleConfig, clientId: e.target.value})}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Google Cloud API Key</label>
-                            <input 
-                                type="password"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
-                                placeholder="AIzaSy..."
-                                value={googleConfig.apiKey}
-                                onChange={e => setGoogleConfig({...googleConfig, apiKey: e.target.value})}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="pt-4">
-                        <button 
-                            onClick={handleGoogleSave}
-                            className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-200 transition-all flex items-center gap-2"
-                        >
-                            <Save size={20} />
-                            Salvar Configuração
-                        </button>
-                    </div>
-                </div>
-           </div>
-      )}
 
       {/* Financial Configuration Section - Only for Hapvida */}
       {activeTab === 'hapvida' && (
@@ -257,8 +150,7 @@ const AdminView: React.FC<AdminViewProps> = ({
         </div>
       )}
 
-      {/* Surgery Definitions Section - Hidden when Sync Tab is active */}
-      {activeTab !== 'sync' && (
+      {/* Surgery Definitions Section */}
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <div>
@@ -292,7 +184,7 @@ const AdminView: React.FC<AdminViewProps> = ({
                     onChange={e => setNewForm({...newForm, name: e.target.value})}
                 />
                 </div>
-
+                {/* ... fields ... */}
                 {activeTab !== 'venda' && (
                     <div className="w-24">
                         <label className={`text-xs font-semibold text-${currentColor}-700 uppercase`}>Pontos</label>
@@ -304,8 +196,7 @@ const AdminView: React.FC<AdminViewProps> = ({
                         />
                     </div>
                 )}
-
-                {activeTab === 'venda' && (
+                 {activeTab === 'venda' && (
                     <div className="w-32">
                         <label className={`text-xs font-semibold text-${currentColor}-700 uppercase`}>Valor (R$)</label>
                         <input 
@@ -317,8 +208,7 @@ const AdminView: React.FC<AdminViewProps> = ({
                         />
                     </div>
                 )}
-
-                <div className="w-40">
+                 <div className="w-40">
                 <label className={`text-xs font-semibold text-${currentColor}-700 uppercase`}>Complexidade</label>
                 <input 
                     className={`w-full mt-1 px-3 py-2 rounded-lg border border-${currentColor}-300 focus:ring-2 focus:ring-${currentColor}-500 outline-none uppercase`}
@@ -358,14 +248,13 @@ const AdminView: React.FC<AdminViewProps> = ({
                             onChange={e => setEditForm({...editForm, name: e.target.value})}
                         />
                         </td>
-                        <td className="px-6 py-3">
+                         <td className="px-6 py-3">
                             <input 
                             className="w-full px-2 py-1 border rounded uppercase"
                             value={editForm.complexity}
                             onChange={e => setEditForm({...editForm, complexity: e.target.value})}
                         />
                         </td>
-                        
                         {activeTab !== 'venda' && (
                             <td className="px-6 py-3 text-right">
                                 <input 
@@ -376,8 +265,7 @@ const AdminView: React.FC<AdminViewProps> = ({
                                 />
                             </td>
                         )}
-
-                        {activeTab === 'venda' && (
+                         {activeTab === 'venda' && (
                             <td className="px-6 py-3 text-right">
                                 <input 
                                 type="number"
@@ -387,7 +275,6 @@ const AdminView: React.FC<AdminViewProps> = ({
                                 />
                             </td>
                         )}
-
                         <td className="px-6 py-3 flex justify-center gap-2">
                         <button onClick={handleSaveEdit} className="text-green-600 hover:bg-green-50 p-1 rounded"><Save size={18} /></button>
                         <button onClick={() => setEditingId(null)} className="text-slate-400 hover:bg-slate-100 p-1 rounded"><X size={18} /></button>
@@ -397,17 +284,12 @@ const AdminView: React.FC<AdminViewProps> = ({
                     <>
                         <td className="px-6 py-3 font-medium text-slate-900">{def.name}</td>
                         <td className="px-6 py-3 text-slate-500">{def.complexity}</td>
-                        
-                        {activeTab !== 'venda' && (
-                            <td className="px-6 py-3 text-right font-bold text-blue-600">{def.points}</td>
-                        )}
-                        
+                        {activeTab !== 'venda' && <td className="px-6 py-3 text-right font-bold text-blue-600">{def.points}</td>}
                         {activeTab === 'venda' && (
                             <td className="px-6 py-3 text-right font-bold text-emerald-600">
                                 {def.basePrice ? def.basePrice.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : '-'}
                             </td>
                         )}
-
                         <td className="px-6 py-3 flex justify-center gap-2">
                         <button onClick={() => handleEdit(def)} className="text-blue-500 hover:bg-blue-50 p-1 rounded"><Edit2 size={16} /></button>
                         <button onClick={() => onDeleteDefinition(def.id)} className="text-red-400 hover:bg-red-50 p-1 rounded"><Trash2 size={16} /></button>
@@ -416,20 +298,9 @@ const AdminView: React.FC<AdminViewProps> = ({
                     )}
                 </tr>
                 ))}
-                {definitions.length === 0 && (
-                    <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-400">
-                            Nenhuma definição encontrada. Importe a tabela padrão ou adicione manualmente.
-                        </td>
-                    </tr>
-                )}
             </tbody>
             </table>
         </div>
-      </div>
-      )}
     </div>
   );
 };
-
-export default AdminView;
