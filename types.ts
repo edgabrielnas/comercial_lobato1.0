@@ -59,4 +59,121 @@ export interface FirebaseConfig {
   appId?: string;
 }
 
-export type ViewMode = 'login' | 'dashboard' | 'list' | 'analytics' | 'upload' | 'add_surgery' | 'admin' | 'doctors' | 'reports';
+export type ViewMode = 'login' | 'dashboard' | 'list' | 'analytics' | 'upload' | 'add_surgery' | 'admin' | 'doctors' | 'reports' | 'billing' | 'insurance' | 'invoices' | 'cashflow' | 'alerts' | 'personal';
+
+// =====================================================
+// MÓDULOS DE GESTÃO FINANCEIRA MÉDICA
+// =====================================================
+
+export type BillingStatus = 'REALIZADO' | 'FATURADO' | 'PAGO' | 'GLOSADO' | 'PENDENTE';
+export type ProcedureType = 'consulta' | 'cirurgia' | 'ambulatorial' | 'telemedicina';
+export type AppealStatus = 'PENDENTE' | 'EM ANÁLISE' | 'APROVADO' | 'NEGADO';
+export type InvoiceStatus = 'PENDENTE' | 'EMITIDA' | 'CANCELADA';
+export type ServiceType = 'médico' | 'cirúrgico' | 'consultoria' | 'perícia';
+export type Entity = 'PJ' | 'PF';
+
+// Módulo 1 — Produção Médica
+export interface MedicalProcedure {
+  id: string;
+  date: string; // YYYY-MM-DD
+  patientIdentifier: string; // Iniciais + Data nascimento (LGPD)
+  procedureType: ProcedureType;
+  location: string;
+  tussCode?: string;
+  procedureName: string;
+  healthInsurance: string; // 'particular' ou nome do convênio
+  guideNumber?: string;
+  tableValue: number;
+  chargedValue: number;
+  receivedValue: number;
+  billingStatus: BillingStatus;
+  expectedPaymentDate?: string;
+  billingDate?: string;
+  paymentDate?: string;
+  doctorName?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+// Módulo 2 — Convênios
+export interface HealthInsurance {
+  id: string;
+  name: string;
+  referenceTable: string;
+  adjustmentPercentage: number;
+  contractualPaymentDays: number;
+  averageActualDays: number;
+  glossRate: number;
+  totalGlossedYear: number;
+}
+
+// Módulo 2 — Glosas
+export interface Gloss {
+  id: string;
+  procedureId?: string;
+  healthInsurance: string;
+  glossCode?: string;
+  glossReason: string;
+  glossedValue: number;
+  identifiedDate: string;
+  appealDeadline?: string;
+  appealStatus: AppealStatus;
+  appealNotes?: string;
+}
+
+// Módulo 3 — NFS-e
+export interface InvoiceNFSe {
+  id: string;
+  procedureId?: string;
+  issueDate?: string;
+  serviceType: ServiceType;
+  recipientType: 'pf' | 'pj';
+  recipientDocument?: string;
+  recipientName: string;
+  city: string;
+  grossValue: number;
+  issRate: number;
+  issWithheld: boolean;
+  irWithheld: boolean;
+  inssWithheld: boolean;
+  netValue: number;
+  nfseNumber?: string;
+  status: InvoiceStatus;
+  competenceMonth?: string;
+  notes?: string;
+}
+
+// Módulo 4 — Despesas
+export interface MedicalExpense {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  value: number;
+  entity: Entity;
+  isDeductible: boolean;
+}
+
+// Módulo 6 — Financeiro Pessoal
+export interface PersonalFinance {
+  id: string;
+  month: string; // YYYY-MM
+  prolaboreDefined: number;
+  prolaboreWithdrawn: number;
+  dividends: number;
+  personalExpenses: number;
+  invested: number;
+  emergencyReserve: number;
+  pgblVgblContribution: number;
+  notes?: string;
+}
+
+// Alerta do sistema
+export interface SystemAlert {
+  id: string;
+  level: 'urgent' | 'warning' | 'info';
+  message: string;
+  detail?: string;
+  action?: string;
+  date: string;
+}

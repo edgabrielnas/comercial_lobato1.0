@@ -4,8 +4,8 @@ import { Surgery, SurgeryDefinition, SupabaseConfig } from '../types';
 let supabase: SupabaseClient | null = null;
 
 // Fallback credentials (Development/Demo)
-const FALLBACK_URL = "https://mrpfcikhpsvnjzixgrqo.supabase.co";
-const FALLBACK_KEY = "sb_publishable_qsu-RwskulBm8fMDT-m-1Q_bJOI7gfs";
+const FALLBACK_URL = "https://gsezbxcmweewsxtlvbnb.supabase.co";
+const FALLBACK_KEY = "sb_publishable_itmposg-VGk__PjH1libAg_efPGPSEH";
 
 export const SupabaseService = {
   initialize: (config?: SupabaseConfig) => {
@@ -16,14 +16,14 @@ export const SupabaseService = {
     // 2. Try Environment Variables (Defensive check)
     // We access import.meta.env safely to prevent runtime crashes if it's undefined
     if (!url || !key) {
-        try {
-            // @ts-ignore - Handle cases where types might misalign during strict builds
-            const env: any = import.meta.env || {}; 
-            url = env.VITE_SUPABASE_URL;
-            key = env.VITE_SUPABASE_ANON_KEY;
-        } catch (e) {
-            console.warn("Could not access import.meta.env");
-        }
+      try {
+        // @ts-ignore - Handle cases where types might misalign during strict builds
+        const env: any = import.meta.env || {};
+        url = env.VITE_SUPABASE_URL;
+        key = env.VITE_SUPABASE_ANON_KEY;
+      } catch (e) {
+        console.warn("Could not access import.meta.env");
+      }
     }
 
     // 3. Fallback to hardcoded constants
@@ -31,13 +31,13 @@ export const SupabaseService = {
     if (!key) key = FALLBACK_KEY;
 
     if (url && key) {
-        try {
-            supabase = createClient(url, key);
-            return supabase;
-        } catch (e) {
-            console.warn("Supabase init warning", e);
-            return null;
-        }
+      try {
+        supabase = createClient(url, key);
+        return supabase;
+      } catch (e) {
+        console.warn("Supabase init warning", e);
+        return null;
+      }
     }
     return null;
   },
@@ -48,7 +48,7 @@ export const SupabaseService = {
 
   fetchSurgeries: async (): Promise<Surgery[]> => {
     if (!supabase) throw new Error("Supabase not initialized");
-    
+
     const { data, error } = await supabase
       .from('surgeries')
       .select('*');
@@ -76,31 +76,33 @@ export const SupabaseService = {
   saveSurgeries: async (surgeries: Surgery[]): Promise<void> => {
     if (!supabase) throw new Error("Supabase not initialized");
 
-    const CHUNK_SIZE = 100; // Supabase batch size limit safety
+    const CHUNK_SIZE = 50;
     for (let i = 0; i < surgeries.length; i += CHUNK_SIZE) {
-        const chunk = surgeries.slice(i, i + CHUNK_SIZE);
-        
-        // Map camelCase (App) to snake_case (DB)
-        const rows = chunk.map(s => ({
-          id: s.id,
-          patient_name: s.patientName,
-          date: s.date,
-          doctor_name: s.doctorName,
-          surgery_type: s.surgeryType,
-          points: s.points,
-          notes: s.notes,
-          source: s.source,
-          health_insurance: s.healthInsurance,
-          cost: s.cost,
-          received_value: s.receivedValue || 0,
-          is_paid: s.isPaid
-        }));
+      const chunk = surgeries.slice(i, i + CHUNK_SIZE);
 
-        const { error } = await supabase
-          .from('surgeries')
-          .upsert(rows, { onConflict: 'id' });
+      const rows = chunk.map(s => ({
+        id: s.id,
+        patient_name: s.patientName,
+        date: s.date,
+        doctor_name: s.doctorName || null,
+        surgery_type: s.surgeryType,
+        points: s.points || 0,
+        notes: s.notes || null,
+        source: s.source || 'Hapvida',
+        health_insurance: s.healthInsurance || null,
+        cost: s.cost || 0,
+        received_value: s.receivedValue || 0,
+        is_paid: s.isPaid || false,
+      }));
 
-        if (error) throw error;
+      const { error } = await supabase
+        .from('surgeries')
+        .upsert(rows, { onConflict: 'id', ignoreDuplicates: false });
+
+      if (error) {
+        console.error('Supabase saveSurgeries error:', JSON.stringify(error));
+        throw new Error(`Erro ao salvar: ${error.message}`);
+      }
     }
   },
 
@@ -136,22 +138,22 @@ export const SupabaseService = {
 
     const CHUNK_SIZE = 100;
     for (let i = 0; i < definitions.length; i += CHUNK_SIZE) {
-        const chunk = definitions.slice(i, i + CHUNK_SIZE);
-        
-        const rows = chunk.map(d => ({
-          id: d.id,
-          name: d.name,
-          points: d.points,
-          complexity: d.complexity,
-          code: d.code,
-          base_price: d.basePrice
-        }));
+      const chunk = definitions.slice(i, i + CHUNK_SIZE);
 
-        const { error } = await supabase
-          .from('definitions')
-          .upsert(rows, { onConflict: 'id' });
+      const rows = chunk.map(d => ({
+        id: d.id,
+        name: d.name,
+        points: d.points,
+        complexity: d.complexity,
+        code: d.code,
+        base_price: d.basePrice
+      }));
 
-        if (error) throw error;
+      const { error } = await supabase
+        .from('definitions')
+        .upsert(rows, { onConflict: 'id' });
+
+      if (error) throw error;
     }
   },
 

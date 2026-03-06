@@ -19,7 +19,7 @@ export const parseDefinitionsCSV = (csvText: string): SurgeryDefinition[] => {
 
     const points = parseFloat(row[1]);
     const basePrice = row[4] ? parseFloat(row[4]) : 0;
-    
+
     definitions.push({
       id: `def-${index}-${Date.now()}`,
       name: normalizeStr(name),
@@ -37,89 +37,113 @@ export const parseSurgeryLogCSV = (csvText: string, definitions: SurgeryDefiniti
   const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
   if (lines.length === 0) return [];
 
-  const headerLineIndex = lines.findIndex(line => 
-    line.toUpperCase().includes('PACIENTE') && (line.toUpperCase().includes('MÉDICO') || line.toUpperCase().includes('MEDICO'))
-  );
+  // Encontra a linha de cabeçalho — aceita qualquer posição
+  const headerLineIndex = lines.findIndex(line => {
+    const upper = line.toUpperCase();
+    return upper.includes('PACIENTE') && (
+      upper.includes('MÉDICO') || upper.includes('MEDICO') || upper.includes('CIRURGIA')
+    );
+  });
 
   if (headerLineIndex === -1) return [];
 
-  const headers = lines[headerLineIndex].split(',').map(h => h.trim().toUpperCase());
-  
-  const patientIdx = headers.findIndex(h => h.includes('PACIENTE'));
-  const doctorIdx = headers.findIndex(h => h.includes('MÉDICO') || h.includes('MEDICO'));
-  const dateIdx = headers.findIndex(h => h.includes('DATA') && !h.includes('CARIMBO'));
-  const surgeryIdx = headers.findIndex(h => h.includes('CIRURGIA'));
-  const pointsIdx = headers.findIndex(h => h.includes('PONTUAÇÃO') || h.includes('PONTOS') || h.includes('PONTUACAO'));
-  const obsIdx = headers.findIndex(h => h.includes('OBSERVAÇÕES') || h.includes('OBS'));
-  const sourceIdx = headers.findIndex(h => h.includes('FONTE') || h.includes('CONVÊNIO') || h.includes('CONVENIO') || h.includes('AREA'));
-  const insuranceIdx = headers.findIndex(h => h.includes('CONVENIO_NOME') || h.includes('OPERADORA'));
-  const costIdx = headers.findIndex(h => h.includes('VALOR') || h.includes('PRECO'));
+  // Parser robusto: split por vírgula respeitando aspas
+  const splitCSVRow = (row: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let ci = 0; ci < row.length; ci++) {
+      const ch = row[ci];
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+      else { current += ch; }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const headers = splitCSVRow(lines[headerLineIndex]).map(h =>
+    h.replace(/["']/g, '').trim()
+      .toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos para comparação
+  );
+
+  // Índices das colunas — NOVA ORDEM: Paciente | Médico | Cirurgia | Convênio | Data do Procedimento | Observação
+  const findCol = (...terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
+
+  const patientIdx = findCol('PACIENTE');
+  const doctorIdx = findCol('MEDICO', 'MÉDICO');
+  const surgeryIdx = findCol('CIRURGIA', 'PROCEDIMENTO');
+  const sourceIdx = findCol('CONVENIO', 'CONVÊNIO', 'CONVENIOS', 'FONTE', 'AREA', 'OPERADORA');
+  const dateIdx = findCol('DATA', 'DT');
+  const obsIdx = findCol('OBSERVA', 'OBS', 'NOTA');
+  const pointsIdx = findCol('PONTU', 'PONTOS');
+  const costIdx = findCol('VALOR', 'PRECO', 'CUSTO');
 
   const surgeries: Surgery[] = [];
 
   for (let i = headerLineIndex + 1; i < lines.length; i++) {
-    // Handle CSV lines that might contain commas inside quotes (basic handling)
-    const row = lines[i].split(',');
+    const row = splitCSVRow(lines[i]);
+    if (row.length < 3) continue;
 
-    if (row.length < 4) continue;
+    const rawPatient = patientIdx >= 0 ? row[patientIdx]?.trim() : '';
+    const rawDoctor = doctorIdx >= 0 ? row[doctorIdx]?.trim() : '';
+    const rawSurgery = surgeryIdx >= 0 ? row[surgeryIdx]?.trim() : '';
+    const rawSource = sourceIdx >= 0 ? row[sourceIdx]?.trim() : 'Hapvida';
+    const rawDate = dateIdx >= 0 ? row[dateIdx]?.trim() : '';
+    const rawObs = obsIdx >= 0 ? row[obsIdx]?.trim() : '';
+    const rawPoints = pointsIdx >= 0 ? row[pointsIdx]?.trim() : '';
+    const rawCost = costIdx >= 0 ? parseFloat(row[costIdx]) : NaN;
 
-    const rawDate = row[dateIdx]?.trim();
-    const rawDoctor = row[doctorIdx]?.trim();
-    const rawPatient = row[patientIdx]?.trim();
-    const rawSurgery = row[surgeryIdx]?.trim();
-    const rawPoints = row[pointsIdx]?.trim();
-    const rawObs = obsIdx !== -1 ? row[obsIdx]?.trim() : '';
-    const rawSource = sourceIdx !== -1 ? row[sourceIdx]?.trim() : 'Hapvida';
-    const rawInsurance = insuranceIdx !== -1 ? row[insuranceIdx]?.trim() : '';
-    const rawCost = costIdx !== -1 ? parseFloat(row[costIdx]) : 0;
+    // Pelo menos cirurgia e data devem existir
+    if (!rawSurgery || !rawDate) continue;
 
-    if (!rawDate || !rawDoctor || !rawSurgery) continue;
-
+    // Normalizar data: DD/MM/YYYY → YYYY-MM-DD
     let formattedDate = rawDate;
     if (rawDate.includes('/')) {
-        const parts = rawDate.split('/');
-        if (parts.length === 3) {
-            let year = parts[2].split(' ')[0]; // Remove time if present
-            if (year === '0025') year = '2025';
-            formattedDate = `${year}-${parts[1]}-${parts[0]}`;
-        }
+      const parts = rawDate.split('/');
+      if (parts.length === 3) {
+        let year = parts[2].split(' ')[0];
+        if (year.length === 2) year = '20' + year;
+        if (year === '0025') year = '2025';
+        formattedDate = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
     }
 
+    // Pontos: tenta pelo CSV, senão busca na tabela de definições
     let points = parseFloat(rawPoints);
     let cost = isNaN(rawCost) ? 0 : rawCost;
-    
-    // Auto-fill points/cost if missing
-    if (isNaN(points) || (!rawPoints && points === 0)) {
-        const normSurgery = normalizeStr(rawSurgery);
-        const def = definitions.find(d => d.name === normSurgery);
-        if (def) {
-            points = def.points;
-            if (cost === 0 && rawSource === 'Venda de Serviço') {
-                cost = def.basePrice || 0;
-            }
-        } else {
-            points = 0;
-        }
+
+    if (isNaN(points) || points === 0) {
+      const normSurgery = normalizeStr(rawSurgery);
+      const def = definitions.find(d => d.name === normSurgery);
+      if (def) {
+        points = def.points;
+        if (cost === 0) cost = def.basePrice || 0;
+      } else {
+        points = 0;
+      }
     }
 
-    // Determine Source Classification if rawSource is ambiguous
-    let finalSource = rawSource;
-    if (finalSource.toUpperCase().includes('HAPVIDA')) finalSource = 'Hapvida';
-    else if (finalSource.toUpperCase().includes('CARTA')) finalSource = 'Carta de Rede';
-    // Else keep it as is (likely Venda de Serviço or specific insurance)
+    // Classificação da fonte
+    let finalSource = rawSource || 'Hapvida';
+    const srcUp = finalSource.toUpperCase();
+    if (srcUp.includes('HAPVIDA')) finalSource = 'Hapvida';
+    else if (srcUp.includes('CARTA')) finalSource = 'Carta de Rede';
+    else if (srcUp.includes('VENDA') || srcUp.includes('PARTICULAR')) finalSource = 'Venda de Serviço';
 
     surgeries.push({
-      id: `imported-${i}-${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       patientName: rawPatient || 'Desconhecido',
       date: formattedDate,
-      doctorName: rawDoctor.toUpperCase(),
+      doctorName: (rawDoctor || 'Desconhecido').toUpperCase(),
       surgeryType: rawSurgery,
-      points: points,
+      points,
       notes: rawObs,
       source: finalSource,
-      healthInsurance: rawInsurance,
-      cost: cost,
-      isPaid: false // Default to unpaid for new imports
+      healthInsurance: rawSource,
+      cost,
+      isPaid: false,
     });
   }
 
@@ -194,5 +218,8 @@ PRESENÇA EM REUNIÕES (+ 50%),1,,
 RETIRADA DE DUPLO J,1,,
 ECIRS,9,,`;
 
-// Initialize with empty logs to avoid SyntaxError due to file truncation
-export const INITIAL_LOGS_CSV = `Carimbo de data/hora,PACIENTE,DATA,MÉDICO,CIRURGIA ,OBSERVAÇÕES,FOLHA DE SALA,Pontuação,CONVÊNIO ,Endereço de e-mail`;
+// Cabeçalho de exemplo na nova ordem de colunas
+export const INITIAL_LOGS_CSV = `Paciente,Médico,Cirurgia,Convênio,Data do Procedimento,Observação`;
+
+// Exemplo de linha para download
+export const EXAMPLE_LOG_ROW = `João Silva,Dr. Paulo,CISTOSCOPIA,Hapvida,01/02/2025,`;
