@@ -1,179 +1,369 @@
-export interface Surgery {
-  id: string;
-  patientName: string;
-  date: string; // Stored as ISO string YYYY-MM-DD
-  doctorName: string;
-  surgeryType: string;
-  points: number;
-  notes?: string;
-  hospital?: string;
-  source?: 'Hapvida' | 'Carta de Rede' | 'Venda de Serviço' | string;
-  healthInsurance?: string; // Convênio (para Venda de Serviço)
-  cost?: number; // Valor em R$ (para Venda de Serviço) - Valor Cobrado/Tabela
-  receivedValue?: number; // Valor efetivamente recebido
-  isPaid?: boolean; // Status do recebimento
-}
+// ============================================================
+// COMERCIAL LOBATO - Sistema de Gestão
+// Tipos TypeScript para todos os módulos
+// ============================================================
 
-export interface SurgeryDefinition {
-  id: string;
-  name: string;
-  points: number;
-  complexity: string;
-  code?: string;
-  basePrice?: number; // Preço base para cálculo de Venda de Serviço
-}
-
-export interface DoctorStats {
-  doctorName: string;
-  totalSurgeries: number;
-  totalPoints: number;
-  averagePoints: number;
-  surgeriesByMonth: Record<string, number>;
-  pointsByMonth: Record<string, number>;
-}
-
+// --- USUÁRIOS E AUTENTICAÇÃO ---
 export interface User {
+  id: string;
+  nome: string;
   email: string;
-  name: string;
-  isAdmin: boolean;
+  perfil: 'admin' | 'gerente' | 'vendedor' | 'caixa' | 'estoquista';
+  ativo: boolean;
+  avatar?: string;
+  filial?: string;
 }
 
-export interface SupabaseConfig {
-  url: string;
-  anonKey: string;
-  lastSync?: string;
+// --- ENDEREÇO ---
+export interface Endereco {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
 }
 
-export interface GoogleConfig {
-  apiKey: string;
-  clientId: string;
-  spreadsheetId: string;
-}
+// --- CLIENTES / CRM ---
+export type TipoCliente = 'pessoa_fisica' | 'pessoa_juridica';
+export type SegmentoCliente = 'particular' | 'construtora' | 'empreiteira' | 'revenda' | 'prefeitura' | 'outros';
+export type StatusCliente = 'ativo' | 'inativo' | 'prospecto' | 'bloqueado';
 
-export interface FirebaseConfig {
-  apiKey: string;
-  authDomain?: string;
-  projectId: string;
-  storageBucket?: string;
-  messagingSenderId?: string;
-  appId?: string;
-}
-
-export type ViewMode = 'login' | 'dashboard' | 'list' | 'analytics' | 'upload' | 'add_surgery' | 'admin' | 'doctors' | 'reports' | 'billing' | 'insurance' | 'invoices' | 'cashflow' | 'alerts' | 'personal';
-
-// =====================================================
-// MÓDULOS DE GESTÃO FINANCEIRA MÉDICA
-// =====================================================
-
-export type BillingStatus = 'REALIZADO' | 'FATURADO' | 'PAGO' | 'GLOSADO' | 'PENDENTE';
-export type ProcedureType = 'consulta' | 'cirurgia' | 'ambulatorial' | 'telemedicina';
-export type AppealStatus = 'PENDENTE' | 'EM ANÁLISE' | 'APROVADO' | 'NEGADO';
-export type InvoiceStatus = 'PENDENTE' | 'EMITIDA' | 'CANCELADA';
-export type ServiceType = 'médico' | 'cirúrgico' | 'consultoria' | 'perícia';
-export type Entity = 'PJ' | 'PF';
-
-// Módulo 1 — Produção Médica
-export interface MedicalProcedure {
+export interface Cliente {
   id: string;
-  date: string; // YYYY-MM-DD
-  patientIdentifier: string; // Iniciais + Data nascimento (LGPD)
-  procedureType: ProcedureType;
-  location: string;
-  tussCode?: string;
-  procedureName: string;
-  healthInsurance: string; // 'particular' ou nome do convênio
-  guideNumber?: string;
-  tableValue: number;
-  chargedValue: number;
-  receivedValue: number;
-  billingStatus: BillingStatus;
-  expectedPaymentDate?: string;
-  billingDate?: string;
-  paymentDate?: string;
-  doctorName?: string;
-  notes?: string;
-  createdAt?: string;
+  tipo: TipoCliente;
+  nome: string;
+  razaoSocial?: string;
+  cpf?: string;
+  cnpj?: string;
+  email?: string;
+  telefone: string;
+  celular?: string;
+  whatsapp?: string;
+  endereco?: Endereco;
+  segmento: SegmentoCliente;
+  status: StatusCliente;
+  limiteCredito: number;
+  saldoDevedor: number;
+  vendedorResponsavel?: string;
+  observacoes?: string;
+  dataCadastro: string;
+  ultimaCompra?: string;
+  totalCompras: number;
+  tags?: string[];
 }
 
-// Módulo 2 — Convênios
-export interface HealthInsurance {
+export interface ContatoCRM {
   id: string;
-  name: string;
-  referenceTable: string;
-  adjustmentPercentage: number;
-  contractualPaymentDays: number;
-  averageActualDays: number;
-  glossRate: number;
-  totalGlossedYear: number;
+  clienteId: string;
+  tipo: 'ligacao' | 'email' | 'visita' | 'whatsapp' | 'reuniao' | 'orcamento';
+  descricao: string;
+  dataContato: string;
+  vendedor: string;
+  resultado?: string;
+  proximoContato?: string;
 }
 
-// Módulo 2 — Glosas
-export interface Gloss {
+export interface OportunidadeCRM {
   id: string;
-  procedureId?: string;
-  healthInsurance: string;
-  glossCode?: string;
-  glossReason: string;
-  glossedValue: number;
-  identifiedDate: string;
-  appealDeadline?: string;
-  appealStatus: AppealStatus;
-  appealNotes?: string;
+  clienteId: string;
+  titulo: string;
+  valor: number;
+  etapa: 'lead' | 'qualificado' | 'proposta' | 'negociacao' | 'fechado_ganho' | 'fechado_perdido';
+  probabilidade: number;
+  dataFechamentoPrevisto: string;
+  vendedor: string;
+  descricao?: string;
+  dataCriacao: string;
 }
 
-// Módulo 3 — NFS-e
-export interface InvoiceNFSe {
+// --- PRODUTOS / ESTOQUE ---
+export type UnidadeMedida = 'un' | 'cx' | 'kg' | 'mt' | 'm2' | 'm3' | 'lt' | 'sc' | 'pc' | 'rl' | 'fd' | 'pç';
+
+export interface Categoria {
   id: string;
-  procedureId?: string;
-  issueDate?: string;
-  serviceType: ServiceType;
-  recipientType: 'pf' | 'pj';
-  recipientDocument?: string;
-  recipientName: string;
-  city: string;
-  grossValue: number;
-  issRate: number;
-  issWithheld: boolean;
-  irWithheld: boolean;
-  inssWithheld: boolean;
-  netValue: number;
-  nfseNumber?: string;
-  status: InvoiceStatus;
-  competenceMonth?: string;
-  notes?: string;
+  nome: string;
+  descricao?: string;
+  parent?: string;
 }
 
-// Módulo 4 — Despesas
-export interface MedicalExpense {
+export interface Fornecedor {
   id: string;
-  date: string;
-  category: string;
-  description: string;
-  value: number;
-  entity: Entity;
-  isDeductible: boolean;
+  razaoSocial: string;
+  nomeFantasia: string;
+  cnpj: string;
+  email?: string;
+  telefone: string;
+  contato?: string;
+  endereco?: Endereco;
+  prazoEntrega: number;
+  condicaoPagamento: string;
+  ativo: boolean;
+  observacoes?: string;
 }
 
-// Módulo 6 — Financeiro Pessoal
-export interface PersonalFinance {
+export interface Produto {
   id: string;
-  month: string; // YYYY-MM
-  prolaboreDefined: number;
-  prolaboreWithdrawn: number;
-  dividends: number;
-  personalExpenses: number;
-  invested: number;
-  emergencyReserve: number;
-  pgblVgblContribution: number;
-  notes?: string;
+  codigo: string;
+  codigoBarras?: string;
+  nome: string;
+  descricao?: string;
+  categoriaId: string;
+  categoria?: string;
+  unidade: UnidadeMedida;
+  fornecedorPrincipalId?: string;
+  custoMedio: number;
+  custoUltimo: number;
+  precoVenda: number;
+  precoAtacado?: number;
+  precoObra?: number;
+  markup: number;
+  margem: number;
+  estoqueAtual: number;
+  estoqueMinimo: number;
+  estoqueMaximo: number;
+  localArmazenamento?: string;
+  ativo: boolean;
+  imagem?: string;
+  ncm?: string;
+  observacoes?: string;
 }
 
-// Alerta do sistema
-export interface SystemAlert {
+export interface MovimentacaoEstoque {
   id: string;
-  level: 'urgent' | 'warning' | 'info';
-  message: string;
-  detail?: string;
-  action?: string;
-  date: string;
+  produtoId: string;
+  produto?: string;
+  tipo: 'entrada' | 'saida' | 'ajuste' | 'devolucao' | 'transferencia';
+  quantidade: number;
+  custo?: number;
+  motivo: string;
+  documentoRef?: string;
+  data: string;
+  responsavel: string;
+  estoqueAnterior: number;
+  estoquePosterior: number;
+}
+
+// --- VENDAS ---
+export type StatusVenda = 'orcamento' | 'aprovado' | 'em_separacao' | 'entregue' | 'cancelado' | 'devolvido';
+export type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito' | 'boleto' | 'cheque' | 'crediario' | 'transferencia';
+
+export interface ItemVenda {
+  id: string;
+  produtoId: string;
+  produto: string;
+  codigo: string;
+  quantidade: number;
+  unidade: UnidadeMedida;
+  precoUnitario: number;
+  desconto: number;
+  total: number;
+}
+
+export interface Venda {
+  id: string;
+  numero: string;
+  clienteId?: string;
+  cliente?: string;
+  vendedor: string;
+  filial: string;
+  data: string;
+  status: StatusVenda;
+  itens: ItemVenda[];
+  subtotal: number;
+  desconto: number;
+  frete: number;
+  total: number;
+  formaPagamento: FormaPagamento;
+  parcelas?: number;
+  observacoes?: string;
+  tipoEntrega: 'retirada' | 'entrega';
+  dataEntregaPrevista?: string;
+}
+
+// --- ORÇAMENTOS ---
+export type StatusOrcamento = 'rascunho' | 'enviado' | 'aprovado' | 'reprovado' | 'expirado' | 'convertido';
+
+export interface LocalObra {
+  nome: string;
+  endereco: string;
+  responsavel: string;
+  contato: string;
+}
+
+export interface Orcamento {
+  id: string;
+  numero: string;
+  clienteId: string;
+  cliente: string;
+  vendedor: string;
+  data: string;
+  validade: string;
+  status: StatusOrcamento;
+  localObra?: LocalObra;
+  itens: ItemVenda[];
+  subtotal: number;
+  desconto: number;
+  frete: number;
+  total: number;
+  observacoes?: string;
+  condicaoPagamento?: string;
+  prazoEntrega?: string;
+  vendaId?: string;
+}
+
+// --- COMPRAS ---
+export type StatusPedidoCompra = 'rascunho' | 'enviado' | 'confirmado' | 'recebido_parcial' | 'recebido' | 'cancelado';
+
+export interface ItemPedidoCompra {
+  id: string;
+  produtoId: string;
+  produto: string;
+  quantidade: number;
+  unidade: UnidadeMedida;
+  precoUnitario: number;
+  total: number;
+  quantidadeRecebida?: number;
+}
+
+export interface PedidoCompra {
+  id: string;
+  numero: string;
+  fornecedorId: string;
+  fornecedor: string;
+  comprador: string;
+  dataEmissao: string;
+  dataPrevisao: string;
+  status: StatusPedidoCompra;
+  itens: ItemPedidoCompra[];
+  subtotal: number;
+  frete: number;
+  total: number;
+  condicaoPagamento: string;
+  observacoes?: string;
+  notaFiscal?: string;
+}
+
+// --- FINANCEIRO ---
+export type StatusConta = 'aberto' | 'pago' | 'vencido' | 'cancelado' | 'parcial';
+export type TipoConta = 'fornecedor' | 'aluguel' | 'folha' | 'impostos' | 'servicos' | 'utilidades' | 'outros';
+
+export interface ContaPagar {
+  id: string;
+  descricao: string;
+  fornecedorId?: string;
+  fornecedor?: string;
+  tipo: TipoConta;
+  valor: number;
+  valorPago?: number;
+  dataEmissao: string;
+  dataVencimento: string;
+  dataPagamento?: string;
+  status: StatusConta;
+  formaPagamento?: FormaPagamento;
+  banco?: string;
+  documentoRef?: string;
+  parcela?: string;
+  observacoes?: string;
+  centrocusto?: string;
+}
+
+export interface ContaReceber {
+  id: string;
+  descricao: string;
+  clienteId?: string;
+  cliente?: string;
+  vendaId?: string;
+  tipo: 'venda' | 'servico' | 'outros';
+  valor: number;
+  valorRecebido?: number;
+  dataEmissao: string;
+  dataVencimento: string;
+  dataRecebimento?: string;
+  status: StatusConta;
+  formaPagamento?: FormaPagamento;
+  documentoRef?: string;
+  parcela?: string;
+  observacoes?: string;
+}
+
+// --- PRECIFICAÇÃO ---
+export interface TabelaPreco {
+  id: string;
+  nome: string;
+  descricao?: string;
+  tipo: 'varejo' | 'atacado' | 'obra' | 'especial' | 'funcionario';
+  ativa: boolean;
+  dataVigencia: string;
+  dataExpiracao?: string;
+  markup?: number;
+  desconto?: number;
+}
+
+// --- NAVIGATION ---
+export type ModuloSistema =
+  | 'dashboard'
+  | 'vendas'
+  | 'pdv'
+  | 'orcamentos'
+  | 'crm'
+  | 'estoque'
+  | 'compras'
+  | 'financeiro'
+  | 'precificacao'
+  | 'relatorios'
+  | 'whatsapp'
+  | 'configuracoes';
+
+// --- WHATSAPP AUTOMAÇÃO ---
+export type GatilhoWhatsApp =
+  | 'novo_cliente'
+  | 'aniversario'
+  | 'pos_venda'
+  | 'orcamento_enviado'
+  | 'conta_vencendo'
+  | 'estoque_reposicao'
+  | 'inatividade'
+  | 'oportunidade_criada'
+  | 'manual';
+
+export interface TemplateWhatsApp {
+  id: string;
+  nome: string;
+  categoria: 'marketing' | 'cobranca' | 'pos_venda' | 'boas_vindas' | 'orcamento' | 'outros';
+  mensagem: string;
+  variaveis: string[];
+  ativo: boolean;
+  criadoEm: string;
+}
+
+export interface AutomacaoWhatsApp {
+  id: string;
+  nome: string;
+  descricao: string;
+  gatilho: GatilhoWhatsApp;
+  templateId: string;
+  condicoes: {
+    segmento?: string;
+    diasInatividade?: number;
+    diasAnteVencimento?: number;
+  };
+  ativo: boolean;
+  execucoes: number;
+  ultimaExecucao?: string;
+  criadoEm: string;
+}
+
+export interface MensagemWhatsApp {
+  id: string;
+  clienteId: string;
+  cliente: string;
+  telefone: string;
+  templateId?: string;
+  mensagem: string;
+  status: 'enviado' | 'entregue' | 'lido' | 'falhou' | 'pendente';
+  automacaoId?: string;
+  enviadoEm: string;
+  lidoEm?: string;
 }
