@@ -313,4 +313,57 @@ export type ModuloSistema =
   | 'financeiro'
   | 'precificacao'
   | 'relatorios'
+  | 'whatsapp'
   | 'configuracoes';
+
+// --- WHATSAPP AUTOMAÇÃO ---
+export type GatilhoWhatsApp =
+  | 'novo_cliente'
+  | 'aniversario'
+  | 'pos_venda'
+  | 'orcamento_enviado'
+  | 'conta_vencendo'
+  | 'estoque_reposicao'
+  | 'inatividade'
+  | 'oportunidade_criada'
+  | 'manual';
+
+export interface TemplateWhatsApp {
+  id: string;
+  nome: string;
+  categoria: 'marketing' | 'cobranca' | 'pos_venda' | 'boas_vindas' | 'orcamento' | 'outros';
+  mensagem: string;
+  variaveis: string[];
+  ativo: boolean;
+  criadoEm: string;
+}
+
+export interface AutomacaoWhatsApp {
+  id: string;
+  nome: string;
+  descricao: string;
+  gatilho: GatilhoWhatsApp;
+  templateId: string;
+  condicoes: {
+    segmento?: string;
+    diasInatividade?: number;
+    diasAnteVencimento?: number;
+  };
+  ativo: boolean;
+  execucoes: number;
+  ultimaExecucao?: string;
+  criadoEm: string;
+}
+
+export interface MensagemWhatsApp {
+  id: string;
+  clienteId: string;
+  cliente: string;
+  telefone: string;
+  templateId?: string;
+  mensagem: string;
+  status: 'enviado' | 'entregue' | 'lido' | 'falhou' | 'pendente';
+  automacaoId?: string;
+  enviadoEm: string;
+  lidoEm?: string;
+}
